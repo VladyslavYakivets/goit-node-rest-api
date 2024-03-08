@@ -11,20 +11,28 @@ const getAllContacts = async (req, res) => {
   res.json(result);
 };
 
-const getOneContact = async (req, res) => {
-  const result = await contactsService.getContactById(req.params.id);
-  if (!result) {
-    throw HttpError(404);
+const getOneContact = async (req, res, next) => {
+  try {
+    const result = await contactsService.getContactById(req.params.id);
+    if (!result) {
+      throw HttpError(404);
+    }
+    res.json(result);
+  } catch (error) {
+    next(error);
   }
-  res.json(result);
 };
 
-const deleteContact = async (req, res) => {
-  const result = await contactsService.removeContact(req.params.id);
-  if (!result) {
-    throw HttpError(404);
+const deleteContact = async (req, res, next) => {
+  try {
+    const result = await contactsService.removeContact(req.params.id);
+    if (!result) {
+      throw HttpError(404);
+    }
+    res.json(result);
+  } catch (error) {
+    next(error);
   }
-  res.json(result);
 };
 
 const createContact = async (req, res, next) => {
