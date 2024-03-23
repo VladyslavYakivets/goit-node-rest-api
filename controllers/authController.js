@@ -2,6 +2,12 @@ import * as authServices from "../services/authServices.js";
 import HttpError from "../helpers/HttpError.js";
 import ctrlWrapper from "../decorators/ctrlWrapper.js";
 import jwt from "jsonwebtoken";
+import gravatar from "gravatar";
+import path from "path";
+import fs from "fs/promises";
+import Jimp from "jimp";
+
+const avatarPath = path.resolve("public", "avatars");
 
 const { JWT_SECRET } = process.env;
 
@@ -12,7 +18,9 @@ const register = async (req, res) => {
     throw HttpError(409, "Email in use");
   }
 
-  const newUser = await authServices.register(req.body);
+  const avatarURL = gravatar.url(email);
+
+  const newUser = await authServices.register({ ...req.body, avatarURL });
 
   res.status(201).json({
     email: newUser.email,
@@ -61,9 +69,27 @@ const logout = async (req, res) => {
   res.status(204).json();
 };
 
+const updateAvatar = async (req, res) => {
+  const { _id } = req.user;
+  const { path: oldPath, filename } = req.file;
+  const newPath = path.join(avatarPath, filename);
+
+  await fs.rename(oldPath, newPath);
+
+  const avatarImage = await Jimp.read(newPath);
+  await avatarImage.resize(250, 250).writeAsync(newPath);
+
+  const avatar = path.join("avatars", filename);
+  await authServices.updateUser({ _id }, { avatarURL: avatar });
+  res.status(200).json({
+    avatarURL: avatar,
+  });
+};
+
 export default {
   register: ctrlWrapper(register),
   login: ctrlWrapper(login),
   getCurrent: ctrlWrapper(getCurrent),
   logout: ctrlWrapper(logout),
+  updateAvatar: ctrlWrapper(updateAvatar),
 };
